@@ -3,7 +3,8 @@ import class_select
 
 
 def _player_sprite_for(cid, color):
-    return class_select._class_icon(cid, color)
+    # Use transparent sprites without the selection panel
+    return class_select._class_icon(cid, color, with_panel=False)
 
 def run(screen, clock, virtual_size):
     vw, vh = virtual_size
