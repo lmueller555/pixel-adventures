@@ -4,7 +4,8 @@
 This module implements a simple overworld town with multiple buildings. Each
 building has a door that lets the player enter an interior room. The camera
 follows the player around the town, scrolling the view when the player moves
-close to the edges of the screen.
+close to the edges of the screen.  The town layout includes roads, trees and
+other small details for a more lively appearance.
 """
 
 import pygame
@@ -22,7 +23,7 @@ def _player_sprite_for(cid, color):
 
 # --- Town data --------------------------------------------------------------
 
-WORLD_W, WORLD_H = 480, 360
+WORLD_W, WORLD_H = 1200, 960
 
 
 def _make_interior(size, floor_color):
@@ -51,36 +52,80 @@ def _make_interior(size, floor_color):
 
 
 def _make_buildings() -> List[dict]:
-    result = []
-    rows, cols = 3, 4
+    """Create all town buildings with an asymmetrical layout.
+
+    There is a single inn and item shop; the rest are homes.  Building
+    positions are hand-tuned for the larger world size.
+    """
+
+    layout = [
+        (bld.Inn, (500, 420)),
+        (bld.ItemShop, (660, 420)),
+        (bld.House, (360, 360)),
+        (bld.House, (760, 360)),
+        (bld.House, (420, 620)),
+        (bld.House, (720, 620)),
+        (bld.House, (240, 420)),
+        (bld.House, (900, 420)),
+        (bld.House, (520, 260)),
+        (bld.House, (640, 700)),
+    ]
+
     floor_colors = [
         (190, 170, 120),
         (170, 170, 190),
         (150, 180, 150),
         (190, 170, 170),
     ]
-    types = [bld.House, bld.Inn, bld.ItemShop]
-    idx = 0
-    for r in range(rows):
-        for c in range(cols):
-            bx = 40 + c * 100
-            by = 40 + r * 100
-            cls = types[idx % len(types)]
-            bobj = cls()
-            w, h = bobj.size
-            rect = pygame.Rect(bx, by, w, h)
-            solid = bobj.solid.move(bx, by)
-            door = bobj.door.move(bx, by)
-            interior = _make_interior((160, 120), floor_colors[idx % len(floor_colors)])
-            result.append({
-                "rect": rect,
-                "solid": solid,
-                "door": door,
-                "interior": interior,
-                "surface": bobj.surface,
-            })
-            idx += 1
+
+    result: List[dict] = []
+    for idx, (cls, (bx, by)) in enumerate(layout):
+        bobj = cls()
+        w, h = bobj.size
+        rect = pygame.Rect(bx, by, w, h)
+        solid = bobj.solid.move(bx, by)
+        door = bobj.door.move(bx, by)
+        interior = _make_interior((160, 120), floor_colors[idx % len(floor_colors)])
+        result.append({
+            "rect": rect,
+            "solid": solid,
+            "door": door,
+            "interior": interior,
+            "surface": bobj.surface,
+        })
     return result
+
+
+def _tree_surface():
+    s = pygame.Surface((32, 32), pygame.SRCALPHA)
+    pygame.draw.rect(s, (110, 70, 40), (14, 20, 4, 12))
+    pygame.draw.circle(s, (40, 120, 40), (16, 16), 12)
+    return s
+
+
+def _bush_surface():
+    s = pygame.Surface((24, 16), pygame.SRCALPHA)
+    pygame.draw.ellipse(s, (40, 160, 40), (0, 0, 24, 16))
+    pygame.draw.ellipse(s, (30, 120, 30), (0, 0, 24, 16), 2)
+    return s
+
+
+def _make_environment():
+    tree = _tree_surface()
+    bush = _bush_surface()
+    trees = [
+        (tree, tree.get_rect(topleft=pos))
+        for pos in [(150, 150), (1000, 180), (300, 780), (950, 760), (1100, 600), (180, 500)]
+    ]
+    bushes = [
+        (bush, bush.get_rect(topleft=pos))
+        for pos in [(400, 540), (650, 540), (500, 300), (700, 300), (500, 800), (650, 820)]
+    ]
+    roads = [
+        pygame.Rect(0, 480, WORLD_W, 40),
+        pygame.Rect(580, 200, 40, WORLD_H - 200),
+    ]
+    return {"trees": trees, "bushes": bushes, "roads": roads}
 
 # --- Main loop --------------------------------------------------------------
 
@@ -98,6 +143,7 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
     player = pygame.Rect(WORLD_W // 2 - 4, WORLD_H // 2 - 4, 8, 8)
 
     buildings = _make_buildings()
+    env = _make_environment()
 
     mode = "town"  # or "interior"
     current = None
@@ -156,9 +202,15 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
 
             # draw town
             game_surf.fill((80, 170, 80))
+            for r in env["roads"]:
+                pygame.draw.rect(game_surf, (150, 140, 120), (r.x - cam_x, r.y - cam_y, r.w, r.h))
             for b in buildings:
                 r = b["rect"]
                 game_surf.blit(b["surface"], (r.x - cam_x, r.y - cam_y))
+            for surf, rect in env["trees"]:
+                game_surf.blit(surf, (rect.x - cam_x, rect.y - cam_y))
+            for surf, rect in env["bushes"]:
+                game_surf.blit(surf, (rect.x - cam_x, rect.y - cam_y))
             if move.length_squared() > 0:
                 anim_t += dt * 8
                 sprite_frame = int(anim_t) % len(sprite_frames)
