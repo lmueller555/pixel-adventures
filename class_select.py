@@ -1,6 +1,6 @@
 # class_select.py
 # Pixel Adventures — Class Selection Screen (after Title)
-# Uses same low-res virtual canvas & integer scale for crisp pixels.
+# Uses the same low-res virtual canvas scaled to fill the screen.
 
 import pygame
 import math
@@ -86,7 +86,7 @@ def _class_icon(color):
     s.set_at((7, 4), (255, 255, 255))
     return s
 
-def run(screen, clock, scale, virtual_size):
+def run(screen, clock, virtual_size):
     vw, vh = virtual_size
     surf = pygame.Surface(virtual_size)
 
@@ -180,5 +180,5 @@ def run(screen, clock, scale, virtual_size):
             surf.blit(prompt, ((vw - prompt.get_width()) // 2, vh - 16))
 
         # scale out
-        pygame.transform.scale(surf, (vw * scale, vh * scale), screen)
+        pygame.transform.scale(surf, screen.get_size(), screen)
         pygame.display.flip()

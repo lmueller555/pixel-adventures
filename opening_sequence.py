@@ -89,7 +89,7 @@ def _player_sprite_for(cid, color):
     surf.fill(color)
     return surf
 
-def run(screen, clock, scale, virtual_size):
+def run(screen, clock, virtual_size):
     vw, vh = virtual_size
     surf = pygame.Surface(virtual_size)
 
@@ -172,5 +172,5 @@ def run(screen, clock, scale, virtual_size):
             pygame.draw.line(surf, class_select.CLASSES[2]["color"], (hx-3, hy), (hx+3, hy))
             pygame.draw.line(surf, class_select.CLASSES[2]["color"], (hx, hy-3), (hx, hy+3))
 
-        pygame.transform.scale(surf, (vw*scale, vh*scale), screen)
+        pygame.transform.scale(surf, screen.get_size(), screen)
         pygame.display.flip()

@@ -1,13 +1,12 @@
 # title_screen.py
 # Pixel Adventures — Title Screen
-# Drawn at low "virtual" resolution and scaled up for crisp pixel art.
+# Drawn at low "virtual" resolution and scaled to fill the screen.
 
 import math
 import random
 import pygame
 
 VIRTUAL_SIZE = (256, 144)   # internal pixel canvas (virtual)
-SCALE        = 4            # window scale (integer)
 TITLE        = "Pixel Adventures"
 
 # --- tiny helpers ------------------------------------------------------------
@@ -50,7 +49,7 @@ class Starfield:
             for s in stars:
                 surf.set_at((int(s["x"]), int(s["y"])), s["col"])
 
-def run(screen, clock, scale=SCALE, virtual_size=VIRTUAL_SIZE):
+def run(screen, clock, virtual_size=VIRTUAL_SIZE):
     vw, vh = virtual_size
     game_surf = pygame.Surface(virtual_size)  # low-res canvas
     starfield = Starfield(vw, vh)
@@ -126,5 +125,5 @@ def run(screen, clock, scale=SCALE, virtual_size=VIRTUAL_SIZE):
         game_surf.blit(exit_hint, (ex, vh - 18))
 
         # --- scale to window --------------------------------------------------
-        pygame.transform.scale(game_surf, (vw * scale, vh * scale), screen)
+        pygame.transform.scale(game_surf, screen.get_size(), screen)
         pygame.display.flip()
