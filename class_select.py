@@ -318,4 +318,47 @@ def run(screen, clock, virtual_size):
             cx = i * col_w
             # card background
             pygame.draw.rect(surf, (22, 22, 36), (cx + 4, 28, col_w - 8, vh - 36))
-            pygame.draw.rect(surf, (40, 40, 70), (cx + 4, 28, col_w_
+            pygame.draw.rect(surf, (40, 40, 70), (cx + 4, 28, col_w - 8, vh - 36), 1)
+
+            # icon + name
+            ic = base_icons[i]
+            # subtle bob for selected class
+            bob = -1 if i == idx else 0
+            oy = 34 + bob + int((math.sin(t * 3.0) * 1 if i == idx else 0))
+            surf.blit(ic, (cx + (col_w - ic.get_width()) // 2, oy))
+
+            nm = _make_text(c["name"], 16, c["color"])
+            surf.blit(nm, (cx + (col_w - nm.get_width()) // 2, oy + ICON_SIZE + 2))
+
+            # small separator
+            pygame.draw.line(surf, (50, 50, 90), (cx + 10, 66 + 8), (cx + col_w - 10, 66 + 8))
+
+            # bonuses text
+            y = 76 + 8
+            bonus_color = (230, 230, 230) if i != idx else (255, 255, 180)
+            for b in c["bonuses"]:
+                line = _make_text(b, 12, bonus_color, shadow=False)
+                # wrap if too wide
+                if line.get_width() <= col_w - 16:
+                    surf.blit(line, (cx + 8, y))
+                    y += 12
+                else:
+                    # crude wrap
+                    mid = len(b) // 2
+                    cut = b[:mid].rstrip() + "-"
+                    line1 = _make_text(cut, 12, bonus_color, shadow=False)
+                    line2 = _make_text(b[mid:].lstrip(), 12, bonus_color, shadow=False)
+                    surf.blit(line1, (cx + 8, y)); y += 12
+                    surf.blit(line2, (cx + 8, y)); y += 12
+
+            # selection highlight
+            if i == idx:
+                pygame.draw.rect(surf, c["color"], (cx + 6, 30, col_w - 12, vh - 40), 1)
+
+        # prompt (blinking)
+        if int(t * 2) % 2 == 0:
+            surf.blit(prompt, ((vw - prompt.get_width()) // 2, vh - 16))
+
+        # scale to window (nearest-neighbor)
+        pygame.transform.scale(surf, screen.get_size(), screen)
+        pygame.display.flip()
