@@ -15,76 +15,70 @@ def _sprite_from_pattern(pattern, palette):
 
 def _player_sprite_for(cid, color):
     if cid == "knight":
-        pattern = [
-            "..OOOO..",
-            ".OHHHHO.",
-            ".OHFFHO.",
-            ".OHEEHO.",
-            ".OHHHHO.",
-            ".OHCCHO.",
-            ".OHCCHO.",
-            ".OHHHHO.",
-            ".OH..HO.",
-            ".OH..HO.",
-            ".OH..HO.",
-            "..O..O..",
-        ]
-        palette = {
-            'O': (30, 30, 70),
-            'H': (170, 170, 190),
-            'F': (255, 220, 180),
-            'E': (255, 255, 255),
-            'C': color,
-        }
-        return _sprite_from_pattern(pattern, palette)
+        surf = pygame.Surface((16, 16), pygame.SRCALPHA)
+        outline = (30, 30, 70)
+        armor = (170, 170, 190)
+        face = (255, 220, 180)
+        eyes = (255, 255, 255)
+        blade = (210, 210, 220)
+        hilt = (120, 80, 40)
+        shield = (160, 130, 70)
+
+        pygame.draw.rect(surf, armor, (4, 1, 8, 4))
+        pygame.draw.rect(surf, armor, (4, 6, 8, 8))
+        pygame.draw.rect(surf, outline, (4, 1, 8, 4), 1)
+        pygame.draw.rect(surf, outline, (4, 6, 8, 8), 1)
+
+        pygame.draw.rect(surf, face, (6, 2, 4, 3))
+        surf.set_at((7, 3), eyes)
+        surf.set_at((8, 3), eyes)
+
+        pygame.draw.rect(surf, outline, (0, 7, 4, 6))
+        pygame.draw.rect(surf, shield, (1, 8, 2, 4))
+        pygame.draw.rect(surf, color, (1, 9, 2, 2))
+
+        pygame.draw.rect(surf, blade, (14, 3, 1, 10))
+        pygame.draw.rect(surf, hilt, (13, 9, 3, 2))
+
+        return surf
     if cid == "black_mage":
-        pattern = [
-            "..OOOO..",
-            ".OHHHHO.",
-            "OHHHHHHO",
-            "OHHHHHHO",
-            ".OkEEkO.",
-            ".OkkkkO.",
-            ".OCAACO.",
-            ".OCAACO.",
-            ".OCAACO.",
-            ".OCAACO.",
-            ".OCAACO.",
-            "..O..O..",
-        ]
-        palette = {
-            'O': (30, 30, 70),
-            'H': (40, 40, 70),
-            'k': (0, 0, 0),
-            'E': (255, 255, 255),
-            'C': (30, 30, 90),
-            'A': color,
-        }
-        return _sprite_from_pattern(pattern, palette)
+        surf = pygame.Surface((16, 16), pygame.SRCALPHA)
+        hat = (40, 40, 70)
+        robe = (0, 0, 0)
+        face = (255, 220, 180)
+        eyes = (255, 255, 255)
+        staff = (200, 40, 40)
+
+        pygame.draw.polygon(surf, hat, [(4, 6), (11, 6), (7, 0)])
+        pygame.draw.rect(surf, hat, (4, 6, 8, 2))
+
+        pygame.draw.rect(surf, face, (6, 8, 4, 4))
+        surf.set_at((7, 9), eyes)
+        surf.set_at((8, 9), eyes)
+
+        pygame.draw.rect(surf, robe, (4, 12, 8, 4))
+        pygame.draw.rect(surf, color, (4, 12, 8, 4), 1)
+
+        pygame.draw.rect(surf, staff, (1, 3, 2, 13))
+
+        return surf
     if cid == "white_mage":
-        pattern = [
-            "..OOOO..",
-            ".OHHHHO.",
-            "OHFFFFHO",
-            "OHFEEFHO",
-            ".OHHHHO.",
-            ".OWAWWO.",
-            ".OWAWWO.",
-            ".OAAAAO.",
-            ".OWAWWO.",
-            ".OWAWWO.",
-            ".OWAWWO.",
-            "..O..O..",
-        ]
-        palette = {
-            'O': (30, 30, 70),
-            'H': color,
-            'F': (255, 220, 190),
-            'E': (0, 0, 0),
-            'W': (240, 240, 240),
-            'A': (200, 40, 40),
-        }
-        return _sprite_from_pattern(pattern, palette)
+        surf = pygame.Surface((16, 16), pygame.SRCALPHA)
+        robe = (240, 240, 240)
+        face = (255, 220, 190)
+        eyes = (0, 0, 0)
+        staff = (40, 160, 60)
+
+        pygame.draw.rect(surf, robe, (4, 1, 8, 14))
+        pygame.draw.rect(surf, color, (4, 1, 8, 14), 1)
+
+        pygame.draw.rect(surf, face, (6, 4, 4, 3))
+        surf.set_at((7, 5), eyes)
+        surf.set_at((8, 5), eyes)
+
+        pygame.draw.rect(surf, staff, (13, 2, 2, 13))
+
+        return surf
     surf = pygame.Surface((8,8))
     surf.fill(color)
     return surf
