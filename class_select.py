@@ -93,19 +93,29 @@ def _dither_rect(surf, rect, c1, c2):
         for x in range(x0, x0+w):
             surf.set_at((x, y), c1 if ((x + y) & 1) == 0 else c2)
 
-def _class_icon(cid, accent):
-    """
-    Return a detailed 24x24 icon surface.
-    We draw into a 22x22 'inner' canvas with a 1px border for crisp framing.
+def _class_icon(cid, accent, with_panel=True, frame=0):
+    """Return a detailed class sprite surface.
+
+    If ``with_panel`` is True a dark backdrop and border are drawn, matching
+    the appearance used on the class selection screen.  When False, a fully
+    transparent surface is returned so the sprite can be used directly in the
+    game world without the black background circle.  ``frame`` selects between
+    a couple of simple walking animation poses (0 or 1).
     """
     border_col = (20, 20, 34)
     panel_col = (14, 14, 24)
 
     s = pygame.Surface((ICON_SIZE, ICON_SIZE), pygame.SRCALPHA)
-    # frame
-    pygame.draw.rect(s, border_col, (0, 0, ICON_SIZE, ICON_SIZE))
-    inner = pygame.Surface((ICON_SIZE-2, ICON_SIZE-2), pygame.SRCALPHA)
-    inner.fill(panel_col)
+    if with_panel:
+        pygame.draw.rect(s, border_col, (0, 0, ICON_SIZE, ICON_SIZE))
+        inner = pygame.Surface((ICON_SIZE-2, ICON_SIZE-2), pygame.SRCALPHA)
+        inner.fill(panel_col)
+        blit_target = s
+        blit_pos = (1, 1)
+    else:
+        inner = pygame.Surface((ICON_SIZE-2, ICON_SIZE-2), pygame.SRCALPHA)
+        blit_target = None
+        blit_pos = (0, 0)
 
     # shared palette bits
     steel = (170, 175, 195)
@@ -169,11 +179,15 @@ def _class_icon(cid, accent):
         pygame.draw.rect(inner, steel, (18, 7, 1, 5))
         sparkle(19, 7, steel_light)
 
-        # — Greaves —
-        pygame.draw.rect(inner, steel_dark, (8, 15, 2, 4))
-        pygame.draw.rect(inner, steel_dark, (12, 15, 2, 4))
-        pygame.draw.rect(inner, steel_light, (8, 16, 1, 1))
-        pygame.draw.rect(inner, steel_light, (12, 16, 1, 1))
+        # — Greaves — (simple 2-frame walk)
+        if frame % 2 == 0:
+            ly, ry = 15, 15
+        else:
+            ly, ry = 14, 16
+        pygame.draw.rect(inner, steel_dark, (8, ly, 2, 4))
+        pygame.draw.rect(inner, steel_dark, (12, ry, 2, 4))
+        pygame.draw.rect(inner, steel_light, (8, ly + 1, 1, 1))
+        pygame.draw.rect(inner, steel_light, (12, ry + 1, 1, 1))
 
     elif cid == "black_mage":
         # — Wizard Hat —
@@ -212,9 +226,14 @@ def _class_icon(cid, accent):
         pygame.draw.rect(inner, ember, (3, 5, 1, 1))
         sparkle(3, 5, (255, 200, 120))
 
-        # Boots
-        pygame.draw.rect(inner, (40, 40, 70), (9, 20, 2, 2))
-        pygame.draw.rect(inner, (40, 40, 70), (13, 20, 2, 2))
+        # Boots (simple 2-frame walk)
+        boot = (40, 40, 70)
+        if frame % 2 == 0:
+            lx, rx = 9, 13
+        else:
+            lx, rx = 8, 14
+        pygame.draw.rect(inner, boot, (lx, 20, 2, 2))
+        pygame.draw.rect(inner, boot, (rx, 20, 2, 2))
 
     elif cid == "white_mage":
         # — Hood & Robe —
@@ -252,16 +271,23 @@ def _class_icon(cid, accent):
         pygame.draw.rect(inner, skin, (8, 13, 1, 1))
         pygame.draw.rect(inner, skin, (15, 13, 1, 1))
 
-        # shoes
-        pygame.draw.rect(inner, (50, 50, 70), (9, 20, 2, 2))
-        pygame.draw.rect(inner, (50, 50, 70), (13, 20, 2, 2))
+        # shoes (simple 2-frame walk)
+        shoe = (50, 50, 70)
+        if frame % 2 == 0:
+            lx, rx = 9, 13
+        else:
+            lx, rx = 8, 14
+        pygame.draw.rect(inner, shoe, (lx, 20, 2, 2))
+        pygame.draw.rect(inner, shoe, (rx, 20, 2, 2))
 
     else:
         # fallback
         pygame.draw.rect(inner, accent, (1, 1, inner.get_width()-2, inner.get_height()-2))
 
-    s.blit(inner, (1, 1))
-    return s
+    if blit_target:
+        blit_target.blit(inner, blit_pos)
+        return s
+    return inner
 
 # ───────────────────────── screen ─────────────────────────
 

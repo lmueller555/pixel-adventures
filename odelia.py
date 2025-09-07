@@ -17,8 +17,8 @@ VIRTUAL_SIZE = (256, 144)
 # --- player sprite helper ---------------------------------------------------
 
 def _player_sprite_for(cid, color):
-    """Return the detailed class icon used for player sprites."""
-    return class_select._class_icon(cid, color)
+    """Return walk animation frames for the chosen class."""
+    return [class_select._class_icon(cid, color, with_panel=False, frame=f) for f in (0, 1)]
 
 # --- Town data --------------------------------------------------------------
 
@@ -90,7 +90,9 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
     game_surf = pygame.Surface(virtual_size)
 
     # Player setup
-    sprite = _player_sprite_for(chosen_class["id"], chosen_class["color"])
+    sprite_frames = _player_sprite_for(chosen_class["id"], chosen_class["color"])
+    anim_t = 0.0
+    sprite_frame = 0
     stats = chosen_class["stats"]
     speed = 60 * stats.get("spd_mult", 1.0)
     player = pygame.Rect(WORLD_W // 2 - 4, WORLD_H // 2 - 4, 8, 8)
@@ -157,8 +159,15 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             for b in buildings:
                 r = b["rect"]
                 game_surf.blit(b["surface"], (r.x - cam_x, r.y - cam_y))
-            sprite_rect = sprite.get_rect(midbottom=(player.centerx - cam_x, player.bottom - cam_y))
-            game_surf.blit(sprite, sprite_rect)
+            if move.length_squared() > 0:
+                anim_t += dt * 8
+                sprite_frame = int(anim_t) % len(sprite_frames)
+            else:
+                anim_t = 0.0
+                sprite_frame = 0
+            current = sprite_frames[sprite_frame]
+            sprite_rect = current.get_rect(midbottom=(player.centerx - cam_x, player.bottom - cam_y))
+            game_surf.blit(current, sprite_rect)
 
         else:  # interior
             size = current["interior"]["size"]
@@ -180,8 +189,15 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
 
             surf = current["interior"]["surface"]
             game_surf.blit(surf, (0, 0))
-            sprite_rect = sprite.get_rect(midbottom=player.midbottom)
-            game_surf.blit(sprite, sprite_rect)
+            if move.length_squared() > 0:
+                anim_t += dt * 8
+                sprite_frame = int(anim_t) % len(sprite_frames)
+            else:
+                anim_t = 0.0
+                sprite_frame = 0
+            current = sprite_frames[sprite_frame]
+            sprite_rect = current.get_rect(midbottom=player.midbottom)
+            game_surf.blit(current, sprite_rect)
 
         pygame.transform.scale(game_surf, screen.get_size(), screen)
         pygame.display.flip()
