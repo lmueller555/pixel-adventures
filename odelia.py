@@ -146,7 +146,7 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
     env = _make_environment()
 
     mode = "town"  # or "interior"
-    current = None
+    current_building = None
     door_cooldown = 0.0
 
     while True:
@@ -187,7 +187,7 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
                 for b in buildings:
                     if player.colliderect(b["door"]):
                         mode = "interior"
-                        current = b
+                        current_building = b
                         d = b["interior"]["door"]
                         player = pygame.Rect(0, 0, 8, 8)
                         player.midbottom = (d.centerx, d.top)
@@ -217,29 +217,29 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             else:
                 anim_t = 0.0
                 sprite_frame = 0
-            current = sprite_frames[sprite_frame]
-            sprite_rect = current.get_rect(midbottom=(player.centerx - cam_x, player.bottom - cam_y))
-            game_surf.blit(current, sprite_rect)
+            sprite = sprite_frames[sprite_frame]
+            sprite_rect = sprite.get_rect(midbottom=(player.centerx - cam_x, player.bottom - cam_y))
+            game_surf.blit(sprite, sprite_rect)
 
         else:  # interior
-            size = current["interior"]["size"]
+            size = current_building["interior"]["size"]
             interior_rect = pygame.Rect(0, 0, *size)
 
             player.x += int(round(vel.x))
             player.y += int(round(vel.y))
             player.clamp_ip(interior_rect)
 
-            d = current["interior"]["door"]
+            d = current_building["interior"]["door"]
             if door_cooldown <= 0 and player.colliderect(d):
                 # exit to town
                 mode = "town"
                 player = pygame.Rect(0, 0, 8, 8)
-                player.midtop = (current["door"].centerx, current["door"].bottom)
-                current = None
+                player.midtop = (current_building["door"].centerx, current_building["door"].bottom)
+                current_building = None
                 door_cooldown = 0.5
                 continue
 
-            surf = current["interior"]["surface"]
+            surf = current_building["interior"]["surface"]
             game_surf.blit(surf, (0, 0))
             if move.length_squared() > 0:
                 anim_t += dt * 8
@@ -247,9 +247,9 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             else:
                 anim_t = 0.0
                 sprite_frame = 0
-            current = sprite_frames[sprite_frame]
-            sprite_rect = current.get_rect(midbottom=player.midbottom)
-            game_surf.blit(current, sprite_rect)
+            sprite = sprite_frames[sprite_frame]
+            sprite_rect = sprite.get_rect(midbottom=player.midbottom)
+            game_surf.blit(sprite, sprite_rect)
 
         pygame.transform.scale(game_surf, screen.get_size(), screen)
         pygame.display.flip()
