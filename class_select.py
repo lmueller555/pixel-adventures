@@ -1,12 +1,13 @@
 # class_select.py
 # Pixel Adventures — Class Selection Screen (after Title)
-# Uses the same low-res virtual canvas scaled to fill the screen.
+# Larger, more detailed pixel sprites (24x24) with subtle bobbing for selection.
 
 import pygame
 import math
 import random
 
 TITLE = "Choose Your Class"
+ICON_SIZE = 24  # bigger canvas for more detail
 
 # 3 FF-inspired classes with visible gameplay effects in the demo
 CLASSES = [
@@ -66,6 +67,8 @@ CLASSES = [
     },
 ]
 
+# ───────────────────────── helpers ─────────────────────────
+
 def _make_text(text, size, color, shadow=True):
     font = pygame.font.Font(None, size)
     surf = font.render(text, False, color)
@@ -77,104 +80,202 @@ def _make_text(text, size, color, shadow=True):
     out.blit(surf, (0, 0))
     return out
 
-def _class_icon(cid, color):
-    """Return a 12x12 icon with simple facial and armor detail."""
-    s = pygame.Surface((12, 12), pygame.SRCALPHA)
-    pygame.draw.rect(s, (25, 25, 45), (0, 0, 12, 12))  # border
-    inner = pygame.Surface((10, 10), pygame.SRCALPHA)
+def _darker(c, amt=30):
+    return (max(0, c[0]-amt), max(0, c[1]-amt), max(0, c[2]-amt))
+
+def _lighter(c, amt=30):
+    return (min(255, c[0]+amt), min(255, c[1]+amt), min(255, c[2]+amt))
+
+def _dither_rect(surf, rect, c1, c2):
+    """Simple 2-color dithering fill for tiny pixel shading."""
+    x0, y0, w, h = rect
+    for y in range(y0, y0+h):
+        for x in range(x0, x0+w):
+            surf.set_at((x, y), c1 if ((x + y) & 1) == 0 else c2)
+
+def _class_icon(cid, accent):
+    """
+    Return a detailed 24x24 icon surface.
+    We draw into a 22x22 'inner' canvas with a 1px border for crisp framing.
+    """
+    border_col = (20, 20, 34)
+    panel_col = (14, 14, 24)
+
+    s = pygame.Surface((ICON_SIZE, ICON_SIZE), pygame.SRCALPHA)
+    # frame
+    pygame.draw.rect(s, border_col, (0, 0, ICON_SIZE, ICON_SIZE))
+    inner = pygame.Surface((ICON_SIZE-2, ICON_SIZE-2), pygame.SRCALPHA)
+    inner.fill(panel_col)
+
+    # shared palette bits
+    steel = (170, 175, 195)
+    steel_dark = (110, 115, 140)
+    steel_light = (220, 225, 240)
+
+    gold = (210, 180, 60)
+    wood = (120, 80, 40)
+
+    linen = (240, 240, 240)
+    linen_shade = (210, 210, 210)
+
+    night = (10, 10, 14)
+    shadow = (0, 0, 0)
+
+    # tiny sparkle helper
+    def sparkle(x, y, col):
+        inner.set_at((x, y), col)
+        if 1 <= x < inner.get_width()-1 and 1 <= y < inner.get_height()-1:
+            inner.set_at((x+1, y), _lighter(col, 25))
+            inner.set_at((x, y+1), _lighter(col, 25))
 
     if cid == "knight":
-        outline = (30, 30, 70)
-        armor = (170, 170, 190)
-        face = (255, 220, 180)
-        eyes = (255, 255, 255)
-        blade = (210, 210, 220)
-        hilt = (120, 80, 40)
-        shield = (160, 130, 70)
+        # — Helmet (crest plume uses accent) —
+        # Crest
+        pygame.draw.polygon(inner, accent, [(11, 2), (16, 4), (14, 1)])
+        pygame.draw.line(inner, _darker(accent, 40), (12, 3), (15, 4))
+        # Helm dome
+        pygame.draw.rect(inner, steel, (6, 3, 10, 5))
+        pygame.draw.rect(inner, steel_dark, (6, 3, 10, 5), 1)
+        # Visor slit
+        pygame.draw.rect(inner, shadow, (8, 5, 6, 1))
+        pygame.draw.rect(inner, steel_light, (7, 4, 1, 1))
+        # Cheek guards
+        pygame.draw.rect(inner, steel, (5, 6, 3, 3))
+        pygame.draw.rect(inner, steel, (14, 6, 3, 3))
+        # Face hint (peach highlight)
+        pygame.draw.rect(inner, (255, 220, 180), (9, 6, 4, 2))
 
-        # Helmet and body
-        pygame.draw.rect(inner, armor, (2, 0, 6, 3))
-        pygame.draw.rect(inner, armor, (2, 4, 6, 6))
-        pygame.draw.rect(inner, outline, (2, 0, 6, 3), 1)
-        pygame.draw.rect(inner, outline, (2, 4, 6, 6), 1)
+        # — Pauldrons & Chestplate —
+        pygame.draw.rect(inner, steel, (4, 9, 14, 6))
+        pygame.draw.rect(inner, steel_dark, (4, 9, 14, 6), 1)
+        _dither_rect(inner, (5, 10, 12, 4), steel, steel_light)
+        # Rivets
+        for x in (6, 10, 14):
+            inner.set_at((x, 11), steel_light)
 
-        # Face
-        pygame.draw.rect(inner, face, (3, 1, 4, 2))
-        inner.set_at((4, 2), eyes)
-        inner.set_at((5, 2), eyes)
+        # Emblem on chest (accent)
+        pygame.draw.rect(inner, accent, (10, 11, 2, 2))
+        inner.set_at((11, 11), _lighter(accent, 30))
 
-        # Shield and sword
-        pygame.draw.rect(inner, outline, (0, 4, 2, 4))
-        pygame.draw.rect(inner, shield, (1, 5, 1, 2))
-        pygame.draw.rect(inner, color, (1, 5, 1, 2), 1)
-        pygame.draw.rect(inner, blade, (8, 1, 1, 7))
-        pygame.draw.rect(inner, hilt, (7, 6, 3, 2))
+        # — Shield (left) with crest —
+        pygame.draw.rect(inner, steel_dark, (2, 11, 3, 7))
+        pygame.draw.rect(inner, steel, (3, 12, 1, 5))
+        pygame.draw.rect(inner, gold, (3, 13, 1, 1))  # crest dot
 
-        # Chest emblem
-        pygame.draw.rect(inner, color, (4, 6, 2, 2))
+        # — Sword (right) —
+        pygame.draw.rect(inner, wood, (18, 13, 2, 2))         # hilt
+        pygame.draw.rect(inner, gold, (17, 12, 4, 1))         # guard
+        pygame.draw.rect(inner, steel_light, (19, 6, 1, 7))   # blade
+        pygame.draw.rect(inner, steel, (18, 7, 1, 5))
+        sparkle(19, 7, steel_light)
+
+        # — Greaves —
+        pygame.draw.rect(inner, steel_dark, (8, 15, 2, 4))
+        pygame.draw.rect(inner, steel_dark, (12, 15, 2, 4))
+        pygame.draw.rect(inner, steel_light, (8, 16, 1, 1))
+        pygame.draw.rect(inner, steel_light, (12, 16, 1, 1))
 
     elif cid == "black_mage":
+        # — Wizard Hat —
         hat = (40, 40, 70)
-        robe = (0, 0, 0)
-        face = (255, 220, 180)
-        eyes = (255, 255, 255)
-        staff = (200, 40, 40)
+        hat_shade = (30, 30, 55)
+        band = accent
+        # brim
+        pygame.draw.rect(inner, hat, (5, 8, 12, 2))
+        # cone
+        pygame.draw.polygon(inner, hat, [(8, 8), (15, 8), (12, 1)])
+        pygame.draw.polygon(inner, hat_shade, [(12, 1), (15, 8), (13, 8)])  # side shade
+        # band
+        pygame.draw.rect(inner, band, (8, 9, 7, 1))
 
-        # Hat with band
-        pygame.draw.polygon(inner, hat, [(2, 3), (7, 3), (5, 0)])
-        pygame.draw.rect(inner, hat, (2, 3, 6, 2))
-        pygame.draw.rect(inner, color, (2, 4, 6, 1))
+        # — Shadowed face with glowing eyes —
+        face = (18, 18, 22)
+        pygame.draw.rect(inner, face, (9, 10, 6, 4))
+        eye = (255, 248, 110)
+        inner.set_at((10, 12), eye)
+        inner.set_at((13, 12), eye)
+        sparkle(10, 12, (255, 255, 180))
+        sparkle(13, 12, (255, 255, 180))
 
-        # Face
-        pygame.draw.rect(inner, face, (3, 5, 4, 3))
-        inner.set_at((4, 6), eyes)
-        inner.set_at((5, 6), eyes)
+        # — Robe with trim —
+        robe = (5, 5, 8)
+        trim = _lighter(accent, 20)
+        pygame.draw.rect(inner, robe, (7, 14, 10, 6))
+        _dither_rect(inner, (8, 15, 8, 4), robe, (10, 10, 16))
+        pygame.draw.rect(inner, trim, (7, 19, 10, 1))   # hem
+        pygame.draw.rect(inner, trim, (11, 14, 2, 5))   # front trim
 
-        # Robe with trim
-        pygame.draw.rect(inner, robe, (2, 8, 6, 2))
-        pygame.draw.rect(inner, color, (2, 8, 6, 2), 1)
+        # — Staff with ember —
+        shaft = (120, 80, 40)
+        ember = (255, 120, 60)
+        pygame.draw.rect(inner, shaft, (3, 6, 1, 12))
+        pygame.draw.rect(inner, ember, (3, 5, 1, 1))
+        sparkle(3, 5, (255, 200, 120))
 
-        # Staff with gem
-        pygame.draw.rect(inner, staff, (0, 1, 1, 8))
-        pygame.draw.rect(inner, (255, 200, 0), (0, 0, 1, 1))
+        # Boots
+        pygame.draw.rect(inner, (40, 40, 70), (9, 20, 2, 2))
+        pygame.draw.rect(inner, (40, 40, 70), (13, 20, 2, 2))
 
     elif cid == "white_mage":
-        robe = (240, 240, 240)
-        face = (255, 220, 190)
-        eyes = (0, 0, 0)
+        # — Hood & Robe —
+        hood = linen
+        hood_edge = _darker(linen, 40)
+        pygame.draw.rect(inner, hood, (7, 2, 10, 7))
+        pygame.draw.rect(inner, hood_edge, (7, 2, 10, 7), 1)
+
+        # face & eyes
+        skin = (255, 220, 190)
+        pygame.draw.rect(inner, skin, (10, 5, 4, 2))
+        inner.set_at((11, 6), (0, 0, 0))
+        inner.set_at((12, 6), (0, 0, 0))
+
+        # robe body
+        pygame.draw.rect(inner, linen, (6, 9, 12, 10))
+        _dither_rect(inner, (7, 10, 10, 7), linen, linen_shade)
+        pygame.draw.rect(inner, hood_edge, (6, 9, 12, 10), 1)
+
+        # classic red triangular trim at hem
+        red = (200, 50, 50)
+        for i in range(6):
+            x = 6 + i*2
+            pygame.draw.polygon(inner, red, [(x, 19), (x+1, 17), (x+2, 19)])
+
+        # staff with green focus
         staff = (40, 160, 60)
+        pygame.draw.rect(inner, (120, 80, 40), (17, 6, 1, 12))
+        pygame.draw.rect(inner, staff, (17, 5, 1, 1))
+        sparkle(17, 5, (170, 255, 170))
 
-        # Robe and hood
-        pygame.draw.rect(inner, robe, (2, 0, 6, 10))
-        pygame.draw.rect(inner, color, (2, 0, 6, 10), 1)
+        # sleeves / hands hint
+        pygame.draw.rect(inner, hood_edge, (6, 12, 3, 2))
+        pygame.draw.rect(inner, hood_edge, (15, 12, 3, 2))
+        pygame.draw.rect(inner, skin, (8, 13, 1, 1))
+        pygame.draw.rect(inner, skin, (15, 13, 1, 1))
 
-        # Face
-        pygame.draw.rect(inner, face, (3, 2, 4, 3))
-        inner.set_at((4, 3), eyes)
-        inner.set_at((5, 3), eyes)
-
-        # Trim and staff
-        pygame.draw.rect(inner, color, (2, 7, 6, 1))
-        pygame.draw.rect(inner, staff, (8, 1, 1, 8))
-        pygame.draw.rect(inner, (240, 60, 60), (8, 0, 1, 1))
+        # shoes
+        pygame.draw.rect(inner, (50, 50, 70), (9, 20, 2, 2))
+        pygame.draw.rect(inner, (50, 50, 70), (13, 20, 2, 2))
 
     else:
-        pygame.draw.rect(inner, color, (0, 0, 10, 10))
+        # fallback
+        pygame.draw.rect(inner, accent, (1, 1, inner.get_width()-2, inner.get_height()-2))
 
     s.blit(inner, (1, 1))
     return s
+
+# ───────────────────────── screen ─────────────────────────
 
 def run(screen, clock, virtual_size):
     vw, vh = virtual_size
     surf = pygame.Surface(virtual_size)
 
     # Prebuild icons/text
-    icons = [_class_icon(c["id"], c["color"]) for c in CLASSES]
+    base_icons = [_class_icon(c["id"], c["color"]) for c in CLASSES]
     title = _make_text(TITLE, 20, (255, 230, 140))
     prompt = _make_text("← →  Select   Z/ENTER  Confirm   ESC  Back", 12, (230, 230, 230), shadow=False)
 
     # Animated background dots
-    dots = [{"x": random.randrange(0, vw), "y": random.randrange(0, vh), "s": random.choice([1,1,2])} for _ in range(60)]
+    dots = [{"x": random.randrange(0, vw), "y": random.randrange(0, vh), "s": random.choice([1, 1, 2])} for _ in range(60)]
     t = 0.0
     idx = 0
 
@@ -191,7 +292,6 @@ def run(screen, clock, virtual_size):
                 if e.key in (pygame.K_RIGHT, pygame.K_d):
                     idx = (idx + 1) % len(CLASSES)
                 if e.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
-                    # return a copy so caller can mutate safely
                     chosen = dict(CLASSES[idx])
                     chosen["stats"] = dict(chosen["stats"])
                     return chosen
@@ -203,7 +303,7 @@ def run(screen, clock, virtual_size):
                 d["y"] = -2
                 d["x"] = random.randrange(0, vw)
 
-        # draw
+        # draw bg
         surf.fill((12, 12, 20))
         for d in dots:
             surf.set_at((int(d["x"]), int(d["y"])), (60, 60, 90))
@@ -218,45 +318,4 @@ def run(screen, clock, virtual_size):
             cx = i * col_w
             # card background
             pygame.draw.rect(surf, (22, 22, 36), (cx + 4, 28, col_w - 8, vh - 36))
-            pygame.draw.rect(surf, (40, 40, 70), (cx + 4, 28, col_w - 8, vh - 36), 1)
-
-            # icon + name
-            ic = icons[i]
-            surf.blit(ic, (cx + (col_w - ic.get_width()) // 2, 34))
-            nm = _make_text(c["name"], 16, c["color"])
-            surf.blit(nm, (cx + (col_w - nm.get_width()) // 2, 50))
-
-            # small separator
-            pygame.draw.line(surf, (50, 50, 90), (cx + 10, 66), (cx + col_w - 10, 66))
-
-            # bonuses text
-            y = 72
-            bonus_color = (230, 230, 230) if i != idx else (255, 255, 180)
-            for b in c["bonuses"]:
-                line = _make_text(b, 12, bonus_color, shadow=False)
-                # wrap if too wide
-                if line.get_width() <= col_w - 16:
-                    surf.blit(line, (cx + 8, y))
-                    y += 12
-                else:
-                    # crude wrap: split roughly in half
-                    mid = len(b) // 2
-                    cut = b[:mid].rstrip() + "-"
-                    line1 = _make_text(cut, 12, bonus_color, shadow=False)
-                    line2 = _make_text(b[mid:].lstrip(), 12, bonus_color, shadow=False)
-                    surf.blit(line1, (cx + 8, y))
-                    y += 12
-                    surf.blit(line2, (cx + 8, y))
-                    y += 12
-
-            # selection highlight
-            if i == idx:
-                pygame.draw.rect(surf, c["color"], (cx + 6, 30, col_w - 12, vh - 40), 1)
-
-        # prompt (blinking)
-        if int(t * 2) % 2 == 0:
-            surf.blit(prompt, ((vw - prompt.get_width()) // 2, vh - 16))
-
-        # scale out
-        pygame.transform.scale(surf, screen.get_size(), screen)
-        pygame.display.flip()
+            pygame.draw.rect(surf, (40, 40, 70), (cx + 4, 28, col_w_
