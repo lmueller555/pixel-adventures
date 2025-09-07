@@ -112,10 +112,41 @@ def _player_sprite_for(cid, color):
 WORLD_W, WORLD_H = 480, 360
 
 
+def _make_interior(size, floor_color):
+    """Return interior data for a building.
+
+    The interior consists of a pre-rendered surface with simple walls and a
+    doorway, as well as the rectangle representing that doorway for
+    interaction logic.
+    """
+    surf = pygame.Surface(size)
+    surf.fill(floor_color)
+
+    wall_color = (120, 80, 40)
+    t = 8  # wall thickness
+    # Walls
+    pygame.draw.rect(surf, wall_color, (0, 0, size[0], t))  # top
+    pygame.draw.rect(surf, wall_color, (0, 0, t, size[1]))  # left
+    pygame.draw.rect(surf, wall_color, (size[0] - t, 0, t, size[1]))  # right
+    pygame.draw.rect(surf, wall_color, (0, size[1] - t, size[0], t))  # bottom
+
+    # Doorway centered along the bottom wall
+    door = pygame.Rect(size[0] // 2 - 8, size[1] - t, 16, t)
+    pygame.draw.rect(surf, (100, 70, 40), door)
+
+    return {"size": size, "door": door, "surface": surf}
+
+
 def _make_buildings() -> List[dict]:
     buildings = []
     rows, cols = 3, 4
     w, h = 60, 60
+    floor_colors = [
+        (190, 170, 120),
+        (170, 170, 190),
+        (150, 180, 150),
+        (190, 170, 170),
+    ]
     for r in range(rows):
         for c in range(cols):
             bx = 40 + c * 100
@@ -123,13 +154,14 @@ def _make_buildings() -> List[dict]:
             rect = pygame.Rect(bx, by, w, h)
             solid = pygame.Rect(bx, by, w, h - 8)
             door = pygame.Rect(bx + w // 2 - 8, by + h - 8, 16, 8)
-            interior_size = (160, 120)
-            interior_door = pygame.Rect(interior_size[0]//2 - 8, interior_size[1] - 8, 16, 8)
+
+            interior = _make_interior((160, 120), floor_colors[(r * cols + c) % len(floor_colors)])
+
             buildings.append({
                 "rect": rect,
                 "solid": solid,
                 "door": door,
-                "interior": {"size": interior_size, "door": interior_door},
+                "interior": interior,
             })
     return buildings
 
@@ -150,6 +182,7 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
 
     mode = "town"  # or "interior"
     current = None
+    door_cooldown = 0.0
 
     while True:
         dt = clock.tick(60) / 1000.0
@@ -158,6 +191,8 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
                 return "quit"
             if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                 return "title"
+
+        door_cooldown = max(0.0, door_cooldown - dt)
 
         keys = pygame.key.get_pressed()
         move = pygame.Vector2(
@@ -183,15 +218,16 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             player.clamp_ip(pygame.Rect(0, 0, WORLD_W, WORLD_H))
 
             # door entry
-            for b in buildings:
-                if player.colliderect(b["door"]):
-                    mode = "interior"
-                    current = b
-                    d = b["interior"]["door"]
-                    size = b["interior"]["size"]
-                    player = pygame.Rect(d.centerx - 4, d.bottom - 12, 8, 8)
-                    interior_rect = pygame.Rect(0, 0, *size)
-                    break
+            if door_cooldown <= 0:
+                for b in buildings:
+                    if player.colliderect(b["door"]):
+                        mode = "interior"
+                        current = b
+                        d = b["interior"]["door"]
+                        player = pygame.Rect(0, 0, 8, 8)
+                        player.midbottom = (d.centerx, d.top)
+                        door_cooldown = 0.5
+                        break
 
             # camera
             cam_x = player.centerx - vw // 2
@@ -218,15 +254,17 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             player.clamp_ip(interior_rect)
 
             d = current["interior"]["door"]
-            if player.colliderect(d):
+            if door_cooldown <= 0 and player.colliderect(d):
                 # exit to town
                 mode = "town"
-                px = current["door"].centerx - 4
-                py = current["door"].bottom
-                player = pygame.Rect(px, py, 8, 8)
+                player = pygame.Rect(0, 0, 8, 8)
+                player.midtop = (current["door"].centerx, current["door"].bottom)
                 current = None
-            game_surf.fill((180, 180, 180))
-            pygame.draw.rect(game_surf, (100, 70, 40), d)
+                door_cooldown = 0.5
+                continue
+
+            surf = current["interior"]["surface"]
+            game_surf.blit(surf, (0, 0))
             sprite_rect = sprite.get_rect(center=player.center)
             game_surf.blit(sprite, sprite_rect)
 
