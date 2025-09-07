@@ -12,7 +12,7 @@ from typing import List
 import buildings as bld
 import class_select
 
-VIRTUAL_SIZE = (256, 144)
+VIRTUAL_SIZE = (1024, 576)
 
 # --- player sprite helper ---------------------------------------------------
 

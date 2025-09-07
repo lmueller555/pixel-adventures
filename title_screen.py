@@ -6,7 +6,7 @@ import math
 import random
 import pygame
 
-VIRTUAL_SIZE = (256, 144)   # internal pixel canvas (virtual)
+VIRTUAL_SIZE = (1024, 576)   # internal pixel canvas (virtual)
 TITLE        = "Pixel Adventures"
 
 # --- tiny helpers ------------------------------------------------------------
