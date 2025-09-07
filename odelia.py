@@ -10,8 +10,10 @@ other small details for a more lively appearance.
 
 import pygame
 from typing import List
+import random
 import buildings as bld
 import class_select
+import npcs
 
 VIRTUAL_SIZE = (1024, 576)
 
@@ -86,6 +88,14 @@ def _make_buildings() -> List[dict]:
         solid = bobj.solid.move(bx, by)
         door = bobj.door.move(bx, by)
         interior = _make_interior((160, 120), floor_colors[idx % len(floor_colors)])
+        occupants = []
+        if isinstance(bobj, bld.Inn):
+            occupants = [npcs.NPC((80, 60), "innkeeper", radius=20)]
+        elif isinstance(bobj, bld.ItemShop):
+            occupants = [npcs.NPC((80, 60), "shopkeeper", radius=20)]
+        else:
+            occupants = [npcs.NPC((80, 60), random.choice(["male", "female"]))]
+        interior["npcs"] = occupants
         result.append({
             "rect": rect,
             "solid": solid,
@@ -145,6 +155,13 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
     buildings = _make_buildings()
     env = _make_environment()
 
+    town_npcs = [
+        npcs.NPC((400, 500), "male"),
+        npcs.NPC((700, 500), "female"),
+        npcs.NPC((500, 700), "male"),
+        npcs.NPC((800, 400), "female"),
+    ]
+
     mode = "town"  # or "interior"
     current_building = None
     door_cooldown = 0.0
@@ -199,6 +216,9 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
                         door_cooldown = 0.5
                         break
 
+            for npc in town_npcs:
+                npc.update(dt, [b["solid"] for b in buildings], pygame.Rect(0, 0, WORLD_W, WORLD_H))
+
             # camera
             cam_x = player.centerx - vw // 2
             cam_y = player.centery - vh // 2
@@ -216,6 +236,8 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
                 game_surf.blit(surf, (rect.x - cam_x, rect.y - cam_y))
             for surf, rect in env["bushes"]:
                 game_surf.blit(surf, (rect.x - cam_x, rect.y - cam_y))
+            for npc in town_npcs:
+                npc.draw(game_surf, (cam_x, cam_y))
             if move.length_squared() > 0:
                 anim_t += dt * 8
                 sprite_frame = int(anim_t) % len(sprite_frames)
@@ -234,6 +256,9 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             player.y += int(round(vel.y))
             player.clamp_ip(interior_rect)
 
+            for npc in current_building["interior"]["npcs"]:
+                npc.update(dt, [], interior_rect)
+
             d = current_building["interior"]["door"]
             if door_cooldown <= 0 and not transition and player.colliderect(d):
                 # exit to town
@@ -244,6 +269,8 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             surf_rect = surf.get_rect(center=(vw // 2, vh // 2))
             game_surf.fill((0, 0, 0))
             game_surf.blit(surf, surf_rect.topleft)
+            for npc in current_building["interior"]["npcs"]:
+                npc.draw(game_surf, (-surf_rect.left, -surf_rect.top))
             if move.length_squared() > 0:
                 anim_t += dt * 8
                 sprite_frame = int(anim_t) % len(sprite_frames)
