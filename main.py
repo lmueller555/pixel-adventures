@@ -1,7 +1,7 @@
 # main.py
 # Pixel Adventures — Flow: Title -> Class Select -> Game -> Title
 
-import sys, math
+import sys
 import pygame
 import title_screen
 import class_select
@@ -11,6 +11,103 @@ SCALE        = title_screen.SCALE
 WINDOW_SIZE  = (VIRTUAL_SIZE[0] * SCALE, VIRTUAL_SIZE[1] * SCALE)
 CAPTION      = "Pixel Adventures"
 
+def _sprite_from_pattern(pattern, palette):
+    """Create a pygame Surface from a small ASCII art pattern.
+
+    `pattern` is a list of equal-length strings where each character maps to a
+    color in `palette`. The character `.` represents transparency.
+    """
+    height = len(pattern)
+    width = len(pattern[0]) if height else 0
+    surf = pygame.Surface((width, height), pygame.SRCALPHA)
+    for y, row in enumerate(pattern):
+        for x, ch in enumerate(row):
+            if ch == '.':
+                continue
+            surf.set_at((x, y), palette[ch])
+    return surf
+
+def _player_sprite_for(cid, color):
+    """Return a small pixel-art Surface for the given class id."""
+    if cid == "knight":
+        pattern = [
+            "..OOOO..",
+            ".OHHHHO.",
+            ".OHFFHO.",
+            ".OHEEHO.",
+            ".OHHHHO.",
+            ".OHCCHO.",
+            ".OHCCHO.",
+            ".OHHHHO.",
+            ".OH..HO.",
+            ".OH..HO.",
+            ".OH..HO.",
+            "..O..O..",
+        ]
+        palette = {
+            'O': (30, 30, 70),       # outline
+            'H': (170, 170, 190),    # armor
+            'F': (255, 220, 180),    # face
+            'E': (255, 255, 255),    # eyes
+            'C': color,              # class accent
+        }
+        return _sprite_from_pattern(pattern, palette)
+
+    if cid == "black_mage":
+        pattern = [
+            "..OOOO..",
+            ".OHHHHO.",
+            "OHHHHHHO",
+            "OHHHHHHO",
+            ".OkEEkO.",
+            ".OkkkkO.",
+            ".OCAACO.",
+            ".OCAACO.",
+            ".OCAACO.",
+            ".OCAACO.",
+            ".OCAACO.",
+            "..O..O..",
+        ]
+        palette = {
+            'O': (30, 30, 70),       # outline
+            'H': (40, 40, 70),       # hat
+            'k': (0, 0, 0),          # face shadow
+            'E': (255, 255, 255),    # eyes
+            'C': (30, 30, 90),       # robe
+            'A': color,              # accent trim
+        }
+        return _sprite_from_pattern(pattern, palette)
+
+    if cid == "white_mage":
+        pattern = [
+            "..OOOO..",
+            ".OHHHHO.",
+            "OHFFFFHO",
+            "OHFEEFHO",
+            ".OHHHHO.",
+            ".OWAWWO.",
+            ".OWAWWO.",
+            ".OAAAAO.",
+            ".OWAWWO.",
+            ".OWAWWO.",
+            ".OWAWWO.",
+            "..O..O..",
+        ]
+        palette = {
+            'O': (30, 30, 70),       # outline
+            'H': color,              # hood color
+            'F': (255, 220, 190),    # face
+            'E': (0, 0, 0),          # eyes
+            'W': (240, 240, 240),    # robe
+            'A': (200, 40, 40),      # red cross accent
+        }
+        return _sprite_from_pattern(pattern, palette)
+
+    # fallback simple block if class unknown
+    surf = pygame.Surface((8, 8))
+    surf.fill(color)
+    return surf
+
 def run_game(screen, clock, chosen_class):
     vw, vh = VIRTUAL_SIZE
     game_surf = pygame.Surface(VIRTUAL_SIZE)
@@ -19,6 +116,9 @@ def run_game(screen, clock, chosen_class):
     stats = chosen_class["stats"]
     color = chosen_class["color"]
     name  = chosen_class["name"]
+
+    # Build player sprite for this class
+    sprite = _player_sprite_for(chosen_class["id"], color)
 
     base_speed = 60
     speed      = base_speed * stats.get("spd_mult", 1.0)
@@ -57,10 +157,8 @@ def run_game(screen, clock, chosen_class):
         if chosen_class["id"] == "black_mage":
             special = min(100.0, special + 8)
 
-    t = 0.0
     while True:
         dt = clock.tick(60) / 1000.0
-        t += dt
 
         for e in pygame.event.get():
             if e.type == pygame.QUIT: return "quit"
@@ -117,14 +215,8 @@ def run_game(screen, clock, chosen_class):
             game_surf.set_at((c.centerx, c.top-1), (255, 255, 140))
 
         # player sprite
-        pygame.draw.rect(game_surf, (30, 30, 70), player.inflate(2, 2))  # border
-        body_col = (
-            max(0, min(255, color[0] + int((math.sin(t*8)+1)*10))),
-            max(0, min(255, color[1])),
-            max(0, min(255, color[2]))
-        )
-        pygame.draw.rect(game_surf, body_col, player)
-        game_surf.set_at((player.centerx, player.top+2), (255, 255, 255))
+        sprite_rect = sprite.get_rect(center=player.center)
+        game_surf.blit(sprite, sprite_rect)
 
         # HUD
         hud_l = big.render(name, False, (230, 230, 230))
