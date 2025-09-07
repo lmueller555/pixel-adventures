@@ -149,6 +149,13 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
     current_building = None
     door_cooldown = 0.0
 
+    # Transition/fade state
+    transition = None  # {"type": str, "building": dict, "dir": int}
+    transition_alpha = 0.0
+    fade_surface = pygame.Surface(virtual_size)
+    fade_surface.fill((0, 0, 0))
+    TRANSITION_SPEED = 255 / 0.25  # 0.25 second fade
+
     while True:
         dt = clock.tick(60) / 1000.0
         for e in pygame.event.get():
@@ -166,6 +173,8 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
         )
         if move.length_squared() > 0:
             move = move.normalize()
+        if transition:
+            move.xy = (0, 0)
         vel = move * speed * dt
 
         if mode == "town":
@@ -183,14 +192,10 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             player.clamp_ip(pygame.Rect(0, 0, WORLD_W, WORLD_H))
 
             # door entry
-            if door_cooldown <= 0:
+            if door_cooldown <= 0 and not transition:
                 for b in buildings:
                     if player.colliderect(b["door"]):
-                        mode = "interior"
-                        current_building = b
-                        d = b["interior"]["door"]
-                        player = pygame.Rect(0, 0, 8, 8)
-                        player.midbottom = (d.centerx, d.top)
+                        transition = {"type": "to_interior", "building": b, "dir": 1}
                         door_cooldown = 0.5
                         break
 
@@ -230,17 +235,15 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             player.clamp_ip(interior_rect)
 
             d = current_building["interior"]["door"]
-            if door_cooldown <= 0 and player.colliderect(d):
+            if door_cooldown <= 0 and not transition and player.colliderect(d):
                 # exit to town
-                mode = "town"
-                player = pygame.Rect(0, 0, 8, 8)
-                player.midtop = (current_building["door"].centerx, current_building["door"].bottom)
-                current_building = None
+                transition = {"type": "to_town", "building": current_building, "dir": 1}
                 door_cooldown = 0.5
-                continue
 
             surf = current_building["interior"]["surface"]
-            game_surf.blit(surf, (0, 0))
+            surf_rect = surf.get_rect(center=(vw // 2, vh // 2))
+            game_surf.fill((0, 0, 0))
+            game_surf.blit(surf, surf_rect.topleft)
             if move.length_squared() > 0:
                 anim_t += dt * 8
                 sprite_frame = int(anim_t) % len(sprite_frames)
@@ -248,8 +251,36 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
                 anim_t = 0.0
                 sprite_frame = 0
             sprite = sprite_frames[sprite_frame]
-            sprite_rect = sprite.get_rect(midbottom=player.midbottom)
+            sprite_rect = sprite.get_rect(midbottom=(player.centerx + surf_rect.left, player.bottom + surf_rect.top))
             game_surf.blit(sprite, sprite_rect)
+
+        # handle transition fade
+        if transition:
+            transition_alpha += TRANSITION_SPEED * dt * transition["dir"]
+            if transition["dir"] == 1 and transition_alpha >= 255:
+                transition_alpha = 255
+                if transition["type"] == "to_interior":
+                    current_building = transition["building"]
+                    d = current_building["interior"]["door"]
+                    player = pygame.Rect(0, 0, 8, 8)
+                    player.midbottom = (d.centerx, d.top)
+                    mode = "interior"
+                    door_cooldown = 0.5
+                else:
+                    bldg = transition["building"]
+                    player = pygame.Rect(0, 0, 8, 8)
+                    player.midtop = (bldg["door"].centerx, bldg["door"].bottom)
+                    current_building = None
+                    mode = "town"
+                    door_cooldown = 0.5
+                transition["dir"] = -1
+            elif transition["dir"] == -1 and transition_alpha <= 0:
+                transition_alpha = 0
+                transition = None
+
+        if transition:
+            fade_surface.set_alpha(int(transition_alpha))
+            game_surf.blit(fade_surface, (0, 0))
 
         pygame.transform.scale(game_surf, screen.get_size(), screen)
         pygame.display.flip()
