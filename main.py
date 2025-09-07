@@ -5,6 +5,7 @@ import sys
 import pygame
 import title_screen
 import class_select
+import opening_sequence
 
 VIRTUAL_SIZE = title_screen.VIRTUAL_SIZE
 SCALE        = title_screen.SCALE
@@ -249,6 +250,9 @@ def main():
         if choice in ("quit", "back"):  # back returns to title, quit exits
             if choice == "quit": break
             else: continue
+
+        # Opening battle sequence
+        opening_sequence.run(screen, clock, SCALE, VIRTUAL_SIZE)
 
         # Game
         r = run_game(screen, clock, choice)
