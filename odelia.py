@@ -9,6 +9,7 @@ close to the edges of the screen.
 
 import pygame
 from typing import List
+import buildings as bld
 
 VIRTUAL_SIZE = (256, 144)
 
@@ -138,32 +139,36 @@ def _make_interior(size, floor_color):
 
 
 def _make_buildings() -> List[dict]:
-    buildings = []
+    result = []
     rows, cols = 3, 4
-    w, h = 60, 60
     floor_colors = [
         (190, 170, 120),
         (170, 170, 190),
         (150, 180, 150),
         (190, 170, 170),
     ]
+    types = [bld.House, bld.Inn, bld.ItemShop]
+    idx = 0
     for r in range(rows):
         for c in range(cols):
             bx = 40 + c * 100
             by = 40 + r * 100
+            cls = types[idx % len(types)]
+            bobj = cls()
+            w, h = bobj.size
             rect = pygame.Rect(bx, by, w, h)
-            solid = pygame.Rect(bx, by, w, h - 8)
-            door = pygame.Rect(bx + w // 2 - 8, by + h - 8, 16, 8)
-
-            interior = _make_interior((160, 120), floor_colors[(r * cols + c) % len(floor_colors)])
-
-            buildings.append({
+            solid = bobj.solid.move(bx, by)
+            door = bobj.door.move(bx, by)
+            interior = _make_interior((160, 120), floor_colors[idx % len(floor_colors)])
+            result.append({
                 "rect": rect,
                 "solid": solid,
                 "door": door,
                 "interior": interior,
+                "surface": bobj.surface,
             })
-    return buildings
+            idx += 1
+    return result
 
 # --- Main loop --------------------------------------------------------------
 
@@ -239,9 +244,7 @@ def run(screen, clock, chosen_class, virtual_size=VIRTUAL_SIZE):
             game_surf.fill((80, 170, 80))
             for b in buildings:
                 r = b["rect"]
-                pygame.draw.rect(game_surf, (160, 110, 60), (r.x - cam_x, r.y - cam_y, r.w, r.h))
-                d = b["door"]
-                pygame.draw.rect(game_surf, (100, 70, 40), (d.x - cam_x, d.y - cam_y, d.w, d.h))
+                game_surf.blit(b["surface"], (r.x - cam_x, r.y - cam_y))
             sprite_rect = sprite.get_rect(center=(player.centerx - cam_x, player.centery - cam_y))
             game_surf.blit(sprite, sprite_rect)
 
