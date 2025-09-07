@@ -8,8 +8,6 @@ import class_select
 import opening_sequence
 
 VIRTUAL_SIZE = title_screen.VIRTUAL_SIZE
-SCALE        = title_screen.SCALE
-WINDOW_SIZE  = (VIRTUAL_SIZE[0] * SCALE, VIRTUAL_SIZE[1] * SCALE)
 CAPTION      = "Pixel Adventures"
 
 def _sprite_from_pattern(pattern, palette):
@@ -231,28 +229,28 @@ def run_game(screen, clock, chosen_class):
         pygame.draw.rect(game_surf, (120, 220, 255), (5, vh - 9, fill_w, 4))
 
         # scale
-        pygame.transform.scale(game_surf, WINDOW_SIZE, screen)
+        pygame.transform.scale(game_surf, screen.get_size(), screen)
         pygame.display.flip()
 
 def main():
     pygame.init()
     pygame.display.set_caption(CAPTION)
-    screen = pygame.display.set_mode(WINDOW_SIZE)
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
 
     while True:
         # Title
-        r = title_screen.run(screen, clock, SCALE, VIRTUAL_SIZE)
+        r = title_screen.run(screen, clock, VIRTUAL_SIZE)
         if r == "quit": break
 
         # Class Select
-        choice = class_select.run(screen, clock, SCALE, VIRTUAL_SIZE)
+        choice = class_select.run(screen, clock, VIRTUAL_SIZE)
         if choice in ("quit", "back"):  # back returns to title, quit exits
             if choice == "quit": break
             else: continue
 
         # Opening battle sequence
-        opening_sequence.run(screen, clock, SCALE, VIRTUAL_SIZE)
+        opening_sequence.run(screen, clock, VIRTUAL_SIZE)
 
         # Game
         r = run_game(screen, clock, choice)
