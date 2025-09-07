@@ -46,6 +46,10 @@ def _player_sprite_for(cid, color):
         pygame.draw.rect(surf, outline, (4, 1, 8, 4), 1)
         pygame.draw.rect(surf, outline, (4, 6, 8, 8), 1)
 
+        # Plume and chest emblem
+        pygame.draw.rect(surf, color, (8, 0, 2, 1))
+        pygame.draw.rect(surf, color, (7, 8, 2, 2))
+
         # Face
         pygame.draw.rect(surf, face, (6, 2, 4, 3))
         surf.set_at((7, 3), eyes)
@@ -70,21 +74,25 @@ def _player_sprite_for(cid, color):
         eyes = (255, 255, 255)
         staff = (200, 40, 40)
 
-        # Hat
+        # Hat with band
         pygame.draw.polygon(surf, hat, [(4, 6), (11, 6), (7, 0)])
         pygame.draw.rect(surf, hat, (4, 6, 8, 2))
+        pygame.draw.rect(surf, color, (4, 7, 8, 1))
 
         # Face
         pygame.draw.rect(surf, face, (6, 8, 4, 4))
         surf.set_at((7, 9), eyes)
         surf.set_at((8, 9), eyes)
 
-        # Robe
+        # Robe with belt and trim
         pygame.draw.rect(surf, robe, (4, 12, 8, 4))
         pygame.draw.rect(surf, color, (4, 12, 8, 4), 1)
+        pygame.draw.rect(surf, color, (4, 13, 8, 1))
+        pygame.draw.rect(surf, color, (4, 15, 8, 1))
 
-        # Staff
+        # Staff with gem
         pygame.draw.rect(surf, staff, (1, 3, 2, 13))
+        pygame.draw.rect(surf, (255, 200, 0), (1, 3, 2, 2))
 
         return surf
 
@@ -95,17 +103,23 @@ def _player_sprite_for(cid, color):
         eyes = (0, 0, 0)
         staff = (40, 160, 60)
 
-        # Hood and robe
+        # Hood and robe with trim
         pygame.draw.rect(surf, robe, (4, 1, 8, 14))
         pygame.draw.rect(surf, color, (4, 1, 8, 14), 1)
+        pygame.draw.rect(surf, color, (4, 14, 8, 1))
 
         # Face
         pygame.draw.rect(surf, face, (6, 4, 4, 3))
         surf.set_at((7, 5), eyes)
         surf.set_at((8, 5), eyes)
 
-        # Staff
+        # Chest mark
+        pygame.draw.rect(surf, color, (7, 9, 2, 1))
+        pygame.draw.rect(surf, color, (8, 8, 1, 3))
+
+        # Staff with gem
         pygame.draw.rect(surf, staff, (13, 2, 2, 13))
+        pygame.draw.rect(surf, (240, 60, 60), (13, 2, 2, 2))
 
         return surf
 

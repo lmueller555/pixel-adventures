@@ -77,13 +77,91 @@ def _make_text(text, size, color, shadow=True):
     out.blit(surf, (0, 0))
     return out
 
-def _class_icon(color):
-    # simple 12x12 icon with border & “eyes”
+def _class_icon(cid, color):
+    """Return a 12x12 icon with simple facial and armor detail."""
     s = pygame.Surface((12, 12), pygame.SRCALPHA)
-    pygame.draw.rect(s, (25, 25, 45), (0, 0, 12, 12))   # border
-    pygame.draw.rect(s, color, (1, 1, 10, 10))          # body
-    s.set_at((4, 4), (255, 255, 255))
-    s.set_at((7, 4), (255, 255, 255))
+    pygame.draw.rect(s, (25, 25, 45), (0, 0, 12, 12))  # border
+    inner = pygame.Surface((10, 10), pygame.SRCALPHA)
+
+    if cid == "knight":
+        outline = (30, 30, 70)
+        armor = (170, 170, 190)
+        face = (255, 220, 180)
+        eyes = (255, 255, 255)
+        blade = (210, 210, 220)
+        hilt = (120, 80, 40)
+        shield = (160, 130, 70)
+
+        # Helmet and body
+        pygame.draw.rect(inner, armor, (2, 0, 6, 3))
+        pygame.draw.rect(inner, armor, (2, 4, 6, 6))
+        pygame.draw.rect(inner, outline, (2, 0, 6, 3), 1)
+        pygame.draw.rect(inner, outline, (2, 4, 6, 6), 1)
+
+        # Face
+        pygame.draw.rect(inner, face, (3, 1, 4, 2))
+        inner.set_at((4, 2), eyes)
+        inner.set_at((5, 2), eyes)
+
+        # Shield and sword
+        pygame.draw.rect(inner, outline, (0, 4, 2, 4))
+        pygame.draw.rect(inner, shield, (1, 5, 1, 2))
+        pygame.draw.rect(inner, color, (1, 5, 1, 2), 1)
+        pygame.draw.rect(inner, blade, (8, 1, 1, 7))
+        pygame.draw.rect(inner, hilt, (7, 6, 3, 2))
+
+        # Chest emblem
+        pygame.draw.rect(inner, color, (4, 6, 2, 2))
+
+    elif cid == "black_mage":
+        hat = (40, 40, 70)
+        robe = (0, 0, 0)
+        face = (255, 220, 180)
+        eyes = (255, 255, 255)
+        staff = (200, 40, 40)
+
+        # Hat with band
+        pygame.draw.polygon(inner, hat, [(2, 3), (7, 3), (5, 0)])
+        pygame.draw.rect(inner, hat, (2, 3, 6, 2))
+        pygame.draw.rect(inner, color, (2, 4, 6, 1))
+
+        # Face
+        pygame.draw.rect(inner, face, (3, 5, 4, 3))
+        inner.set_at((4, 6), eyes)
+        inner.set_at((5, 6), eyes)
+
+        # Robe with trim
+        pygame.draw.rect(inner, robe, (2, 8, 6, 2))
+        pygame.draw.rect(inner, color, (2, 8, 6, 2), 1)
+
+        # Staff with gem
+        pygame.draw.rect(inner, staff, (0, 1, 1, 8))
+        pygame.draw.rect(inner, (255, 200, 0), (0, 0, 1, 1))
+
+    elif cid == "white_mage":
+        robe = (240, 240, 240)
+        face = (255, 220, 190)
+        eyes = (0, 0, 0)
+        staff = (40, 160, 60)
+
+        # Robe and hood
+        pygame.draw.rect(inner, robe, (2, 0, 6, 10))
+        pygame.draw.rect(inner, color, (2, 0, 6, 10), 1)
+
+        # Face
+        pygame.draw.rect(inner, face, (3, 2, 4, 3))
+        inner.set_at((4, 3), eyes)
+        inner.set_at((5, 3), eyes)
+
+        # Trim and staff
+        pygame.draw.rect(inner, color, (2, 7, 6, 1))
+        pygame.draw.rect(inner, staff, (8, 1, 1, 8))
+        pygame.draw.rect(inner, (240, 60, 60), (8, 0, 1, 1))
+
+    else:
+        pygame.draw.rect(inner, color, (0, 0, 10, 10))
+
+    s.blit(inner, (1, 1))
     return s
 
 def run(screen, clock, virtual_size):
@@ -91,7 +169,7 @@ def run(screen, clock, virtual_size):
     surf = pygame.Surface(virtual_size)
 
     # Prebuild icons/text
-    icons = [_class_icon(c["color"]) for c in CLASSES]
+    icons = [_class_icon(c["id"], c["color"]) for c in CLASSES]
     title = _make_text(TITLE, 20, (255, 230, 140))
     prompt = _make_text("← →  Select   Z/ENTER  Confirm   ESC  Back", 12, (230, 230, 230), shadow=False)
 
